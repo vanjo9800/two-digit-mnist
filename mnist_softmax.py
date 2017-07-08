@@ -13,22 +13,23 @@ import tensorflow as tf
 
 FLAGS = None
 
-
 def main(_):
 # Import data
-	mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=True)
+	mnist = input_data.read_data_sets(FLAGS.data_dir, one_hot=False)
 
 # Create the model
 	x = tf.placeholder(tf.float32, [None, 2*784])
-	W = tf.Variable(tf.zeros([2*784, 100]))
-	b = tf.Variable(tf.zeros([100]))
-	y = tf.matmul(x, W) + b
+	W1 = tf.Variable(tf.zeros([2*784, 50]))
+	b1 = tf.Variable(tf.zeros([50]))
+	W2 = tf.Variable(tf.zeros([50, 100]))
+	b2 = tf.Variable(tf.zeros([100]))
+	y = tf.matmul(tf.nn.relu(tf.matmul(x,W1) + b1), W2) + b2
 
 # Define loss and optimizer
-	y_ = tf.placeholder(tf.float32, [None, 100])
+	y_ = tf.placeholder(tf.int64, [None])
 
-	cross_entropy = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_, logits=y))
-	train_step = tf.train.GradientDescentOptimizer(0.7).minimize(cross_entropy)
+	cross_entropy = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_, logits=y))
+	train_step = tf.train.GradientDescentOptimizer(0.5).minimize(cross_entropy)
 
 	sess = tf.InteractiveSession()
 	tf.global_variables_initializer().run()
@@ -49,15 +50,12 @@ def main(_):
 		batch_ys = []
 		for _ in range(100):
 			batch_xs.append(np.concatenate([train_data[train_numbers[step]],train_data[train_numbers[step+1]]]))
-			current_label = np.zeros(100)
-			current_label[list(train_labels[train_numbers[step]]).index(1) * 10 + list(train_labels[train_numbers[step+1]]).index(1)] = 1
-			batch_ys.append(current_label)
+			batch_ys.append(train_labels[train_numbers[step]] * 10 + train_labels[train_numbers[step+1]])
 			step+=2
-		#batch_xs, batch_ys = mnist.train.next_batch(100)
 		sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys})
 
 # Test trained model
-	correct_prediction = tf.equal(tf.argmax(y, 1), tf.argmax(y_, 1))
+	correct_prediction = tf.equal(tf.argmax(y, 1), y_)
 	accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 	test_data = mnist.test.images
@@ -72,9 +70,7 @@ def main(_):
 	print("Starting testing")
 	for _ in range(len(test_data)):
 		testbatch_xs.append(np.concatenate([test_data[test_numbers[step]],test_data[test_numbers[step+1]]]))
-		current_label = np.zeros(100)
-		current_label[list(test_labels[test_numbers[step]]).index(1) * 10 + list(test_labels[test_numbers[step+1]]).index(1)] = 1
-		testbatch_ys.append(current_label)
+		testbatch_ys.append(test_labels[test_numbers[step]] * 10 + test_labels[test_numbers[step+1]])
 		step+=2
 
 	print(sess.run(accuracy, feed_dict={x: testbatch_xs, y_: testbatch_ys}))
