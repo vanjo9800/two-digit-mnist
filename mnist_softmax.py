@@ -21,9 +21,11 @@ def main(_):
         x = tf.placeholder(tf.float32, [None, 2*784])
         W1 = tf.Variable(tf.random_normal([2*784, 256]))
         b1 = tf.Variable(tf.random_normal([256]))
-        W2 = tf.Variable(tf.random_normal([256, 100]))
+	layer1 = tf.matmul(x,W1) + b1
+        
+	W2 = tf.Variable(tf.random_normal([256, 100]))
         b2 = tf.Variable(tf.random_normal([100]))
-        y = tf.matmul(tf.matmul(x,W1) + b1, W2) + b2
+        y = tf.matmul(layer1, W2) + b2
 
 # Define loss and optimizer
         y_ = tf.placeholder(tf.int64, [None])
@@ -39,7 +41,7 @@ def main(_):
 
 # Train
         print("Starting training")
-        for round in range(6000):
+        for round in range(8000):
                 batch_xs = []
                 batch_ys = []
                 for _ in range(100):
